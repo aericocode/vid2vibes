@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>vid2vibes</title>
+    <meta name="description" content="Generate haptic patterns from video to audio">
+    <meta property="og:title" content="vid2vibes">
+    <meta property="og:description" content="Audio-reactive pattern generator">
+    <link rel="icon" type="image/svg+xml" href="./images/favicon.svg">
+    <link href="./styles/css2.css" rel="stylesheet">
+    <link href="./styles/main.css" rel="stylesheet">
+    <script src="./scripts/jszip.min.js"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar - File List -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">
+                    <span>Files</span>
+                    <span class="sidebar-count" id="sidebarCount">0</span>
+                </div>
+                <div class="sidebar-actions">
+                    <button class="btn-small" id="addMoreBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                        Add
+                    </button>
+                    <button class="btn-small" id="clearAllBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                        Clear
+                    </button>
+                </div>
+            </div>
+            <div class="sidebar-files" id="sidebarFiles"></div>
+            <div class="sidebar-progress" id="sidebarProgress">
+                <div class="sidebar-progress-text">
+                    <span id="sidebarProgressText">Processing...</span>
+                    <span id="sidebarProgressCount">0/0</span>
+                </div>
+                <div class="sidebar-progress-bar">
+                    <div class="sidebar-progress-fill" id="sidebarProgressFill"></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent">
+            <div class="container">
+                <header>
+                    <button class="info-btn" id="infoBtn" title="About & Privacy">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                        Info
+                    </button>
+                    <h1>Lovense Video Sync</h1>
+                    <p class="subtitle">Convert videos to patterns, then play with synchronized device control</p>
+                    <button class="changelog-btn" id="changelogBtn" title="View changelog">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                        Changelog
+                    </button>
+                </header>
+
+                <!-- View Tabs -->
+                <div class="view-tabs">
+                    <button class="view-tab active" id="viewTabConvert">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+                        Convert
+                    </button>
+                    <button class="view-tab" id="viewTabPlay">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        Play
+                    </button>
+                </div>
+
+                <!-- ==================== CONVERT VIEW ==================== -->
+                <div id="convertView">
+                    <!-- Drop Zone -->
+                    <div class="drop-zone" id="dropZone">
+                        <svg class="drop-zone-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+                        </svg>
+                        <p class="drop-zone-text">Drop video files here or click to browse</p>
+                        <!--<p class="drop-zone-hint">Supports multiple files • Drag video + Funscript together for pre-made patterns</p>-->
+                    </div>
+
+                    <!-- File Info -->
+                    <div class="file-info" id="fileInfo">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 24px; height: 24px; color: var(--accent-secondary);">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"/>
+                        </svg>
+                        <div class="file-details">
+                            <div class="file-name" id="fileName">filename.mp4</div>
+                            <div class="file-meta" id="fileMeta">0 MB • Pending</div>
+                        </div>
+                        <button class="btn-small" id="fileRemove">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                            Remove
+                        </button>
+                    </div>
+
+                    <!-- Analysis Panel -->
+                    <div class="panel" id="analysisPanel">
+                        <div class="panel-header">
+                            <span class="panel-title">Pattern Settings</span>
+                        </div>
+                        <div class="settings-section">
+                            <div class="settings-grid">
+                                <div class="setting-group">
+                                    <label>Device Type</label>
+                                    <select id="deviceType">
+                                        <option value="generic-vibe">Generic Vibrator</option>
+                                        <option value="max2">Max 2 (Vibe + Pump)</option>
+                                        <option value="nora">Nora (Vibe + Rotate)</option>
+                                        <option value="gush2">Gush 2 (Oscillate)</option>
+                                        <option value="solace">Solace Pro (Thrust)</option>
+                                    </select>
+                                </div>
+                                <div class="setting-group">
+                                    <label>Min Intensity (0-20)</label>
+                                    <input type="number" id="minIntensity" value="0" min="0" max="20" step="1">
+                                </div>
+                                <div class="setting-group">
+                                    <label>Max Intensity (0-20)</label>
+                                    <input type="number" id="maxIntensity" value="20" min="0" max="20" step="1">
+                                </div>
+                                <div class="setting-group">
+                                    <label>On-Beat Boost</label>
+                                    <select id="onBeatBoost">
+                                        <option value="1.0">Normal (volume-matched)</option>
+                                        <option value="1.2" selected>Boosted (+20%)</option>
+                                        <option value="1.4">Strong (+40%)</option>
+                                        <option value="1.6">Maximum (+60%)</option>
+                                    </select>
+                                    <span class="setting-hint">Intensity multiplier during beats</span>
+                                </div>
+                                <div class="setting-group">
+                                    <label>Break Intensity</label>
+                                    <select id="breakIntensity">
+                                        <option value="0">Off (0)</option>
+                                        <option value="0.1" selected>Minimal (10%)</option>
+                                        <option value="0.2">Low (20%)</option>
+                                        <option value="0.3">Medium (30%)</option>
+                                    </select>
+                                    <span class="setting-hint">Intensity during break before beat</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel-actions">
+                            <button class="btn-primary" id="convertBtn">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+                                Convert to Pattern
+                            </button>
+                            <button class="btn-secondary" id="resetBtn">Reset</button>
+                        </div>
+                    </div>
+
+                    <!-- Batch Actions -->
+                    <div class="batch-actions" id="batchActions">
+                        <span class="batch-title">Batch Actions</span>
+                        <button class="btn-secondary" id="convertAllBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                            Regenerate All
+                        </button>
+                        <button class="btn-secondary" id="downloadAllBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                            Download All Funscripts
+                        </button>
+                    </div>
+
+                    <!-- Results -->
+                    <div class="results-section" id="resultsSection">
+                        <div class="results-header">
+                            <span class="results-title">Generated Pattern</span>
+                            <div class="results-stats">
+                                <div class="stat">
+                                    <div class="stat-value" id="statDuration">0:00</div>
+                                    <div class="stat-label">Duration</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-value" id="statAvgBpm">--</div>
+                                    <div class="stat-label">BPM</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-value" id="statPoints">0</div>
+                                    <div class="stat-label">Data Points</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-value" id="statPatterns">0</div>
+                                    <div class="stat-label">Patterns</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="waveform-container">
+                            <canvas class="waveform-canvas" id="waveformCanvas"></canvas>
+                        </div>
+                        <div class="json-output-container">
+                            <div class="json-output-actions">
+                                <button class="btn-small" id="copyJsonBtn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75"/></svg>
+                                    Copy
+                                </button>
+                            </div>
+                            <textarea class="json-output" id="jsonOutput" readonly></textarea>
+                        </div>
+                        <div class="json-download-row">
+                            <button class="btn-download" id="downloadJsonBtn">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                                Download Funscript
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== PLAY VIEW ==================== -->
+                <div id="playView" class="hidden">
+                    <!-- Play View Drop Zone (for pre-saved video+Funscript) -->
+                    <div class="play-drop-zone" id="playDropZone">
+                        <p class="play-drop-zone-text">Drop video <b>+ Funscript</b> files to load pre-saved patterns</p>
+                        <p class="play-drop-zone-hint">Or switch to Convert tab to create patterns from videos</p>
+                    </div>
+
+                    <!-- Device Connection Bar (compact, always visible) -->
+                    <div class="device-bar" id="deviceBar">
+                        <div class="device-bar-status" id="deviceBarStatus">
+                            <div class="device-bar-dot disconnected" id="deviceBarDot"></div>
+                            <span id="deviceBarText">No device connected</span>
+                        </div>
+                        <div class="device-bar-controls">
+                            <input type="text" class="device-bar-ip" id="manualIPInput" placeholder="IP address (e.g., 192.168.1.100)">
+                            <select class="device-select hidden" id="deviceSelect"></select>
+                            <button class="btn-secondary" id="connectBtn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path d="M5 12.55a11 11 0 0 1 14.08 0M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>
+                                Connect
+                            </button>
+                            <button class="btn-secondary hidden" id="reconnectBtn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+                                Reconnect
+                            </button>
+                            <button class="btn-secondary hidden" id="disconnectBtn">Disconnect</button>
+                        </div>
+                    </div>
+
+                    <!-- Player Section (always visible when files loaded) -->
+                    <div id="playerSection" class="hidden">
+
+                        <!-- Pattern Visualizer -->
+                        <div class="pattern-visualizer">
+                            <canvas id="patternCanvas"></canvas>
+                            <div class="pattern-info">
+                                <span>Intensity timeline</span>
+                                <span>
+                                    <span style="background: linear-gradient(90deg, #4c1d95, #a855f7, #f0abfc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 500;">Low → High</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Video Container -->
+                        <div class="video-container" id="videoContainer">
+                            <video id="videoElement"></video>
+                            <div class="video-volume-overlay" id="volumeOverlay">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                                <span id="volumeOverlayValue">100%</span>
+                            </div>
+                            <!-- Play/Pause overlay on click -->
+                            <div class="video-click-overlay" id="videoClickOverlay"></div>
+                            <!-- Fullscreen controls -->
+                            <div class="fullscreen-controls" id="fullscreenControls">
+                                <button class="fullscreen-exit-btn" id="fullscreenExitBtn" title="Exit fullscreen (Esc)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+                                </button>
+                                <!-- Firefox fallback hints -->
+                                <div class="fullscreen-firefox-hints" id="fullscreenFirefoxHints">
+                                    <div class="firefox-hint-content">
+                                        <p><strong>Keyboard Controls</strong></p>
+                                        <p>Space - Play/Pause</p>
+                                        <p>← → - Seek 5s</p>
+                                        <p>M - Mute</p>
+                                        <p>Esc - Exit fullscreen</p>
+                                        <p style="margin-top: 0.5rem;"><strong>Mouse</strong></p>
+                                        <p>Click - Play/Pause</p>
+                                        <p>Double-click - Exit fullscreen</p>
+                                        <p>Scroll - Volume</p>
+                                    </div>
+                                </div>
+                                <div class="fullscreen-bottom" id="fullscreenBottom">
+                                    <div class="fullscreen-progress-container">
+                                        <input type="range" class="fullscreen-progress" id="fullscreenProgress" min="0" max="100" value="0" step="0.1">
+                                        <div class="fullscreen-progress-bar" id="fullscreenProgressBar"></div>
+                                    </div>
+                                    <div class="fullscreen-controls-row">
+                                        <button class="fullscreen-play-btn" id="fullscreenPlayBtn">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                        </button>
+                                        <div class="fullscreen-time">
+                                            <span id="fullscreenCurrentTime">0:00</span>
+                                            <span style="opacity: 0.5;">/</span>
+                                            <span id="fullscreenDuration">0:00</span>
+                                        </div>
+                                        <div class="fullscreen-spacer"></div>
+                                        <div class="fullscreen-volume">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                                            <input type="range" class="fullscreen-volume-slider" id="fullscreenVolumeSlider" min="0" max="1" step="0.05" value="1">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Player Progress -->
+                        <div class="player-progress">
+                            <input type="range" id="playerProgress" min="0" max="100" value="0">
+                            <div class="player-time">
+                                <span id="playerCurrentTime">0:00</span>
+                                <span id="playerDuration">0:00</span>
+                            </div>
+                        </div>
+
+                        <!-- Player Controls -->
+                        <div class="player-controls">
+                            <button class="btn-icon" id="prevBtn" title="Previous (with confirmation if playing)">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+                            </button>
+                            <button class="btn-large" id="playPauseBtn">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            </button>
+                            <button class="btn-icon" id="nextBtn" title="Next (with confirmation if playing)">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+                            </button>
+                        </div>
+
+                        <!-- Secondary Controls -->
+                        <div class="player-secondary-controls">
+                            <button class="btn-icon" id="playbackModeBtn" title="Toggle Loop/Next">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+                                Next
+                            </button>
+                            
+                            <div class="volume-control">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                                <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1">
+                                <span id="volumeValue">100%</span>
+                            </div>
+                            
+                            <button class="btn-icon" id="fullscreenBtn" title="Fullscreen (F)">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span id="toastMessage">Done!</span>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal">
+            <h3>Confirm</h3>
+            <p id="confirmMessage">Are you sure?</p>
+            <div class="modal-actions">
+                <button class="btn-secondary" id="confirmNo">Cancel</button>
+                <button class="btn-primary" id="confirmYes">Yes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Changelog Modal -->
+    <div class="changelog-modal-overlay" id="changelogModal">
+        <div class="changelog-modal">
+            <div class="changelog-header">
+                <h3>Changelog</h3>
+                <button class="changelog-close" id="changelogClose">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="changelog-content" id="changelogContent">
+                <!-- CHANGELOG CONTENT - Edit this section directly -->
+                <h2>v1.2.0 - 2025-01-13</h2>
+                <h3>Added</h3>
+                <ul>
+                    <li>Public changelog</li>
+                </ul>
+                <h3>Fixed</h3>
+                <ul>
+                    <li>Firefox fullscreen controls now work properly</li>
+                    <li>Better pointer event handling in fullscreen mode</li>
+                </ul>
+                <hr>
+                <h2>v1.1.0</h2>
+                <h3>Added</h3>
+                <ul>
+                    <li>Batch file processing</li>
+                    <li>Multi-device support</li>
+                    <li>Pattern visualization with intensity gradients</li>
+                    <li>Privacy monitor for network activity</li>
+                </ul>
+                <h3>Improved</h3>
+                <ul>
+                    <li>Better beat detection algorithm</li>
+                    <li>Smoother pattern transitions</li>
+                </ul>
+                <hr>
+                <h2>v1.0.0</h2>
+                <h3>Initial Release</h3>
+                <ul>
+                    <li>Video to pattern conversion</li>
+                    <li>Audio analysis with beat detection</li>
+                    <li>Lovense device integration</li>
+                    <li>Real-time pattern playback</li>
+                    <li>Export to JSON format</li>
+                </ul>
+                <!-- END CHANGELOG CONTENT -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Modal -->
+    <div class="info-modal-overlay" id="infoModal">
+        <div class="info-modal">
+            <div class="info-header">
+                <h3>About vid2vibes</h3>
+                <button class="info-close" id="infoClose">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="info-content" id="infoContent">
+                <!-- INFO CONTENT - Edit this section directly -->
+                <section class="info-section">
+                    <h2>🔒 Privacy & Security</h2>
+                    <p>
+                        <strong>vid2vibes runs 100% locally in your browser.</strong> Your videos never leave your device—all audio analysis 
+                        and pattern generation happens right here, on your machine. No uploads, no cloud processing, no external servers.
+                    </p>
+                    <p>
+                        The only network traffic is between your browser and your Lovense device on your local network (LAN). 
+                        You can verify this yourself using the Privacy Monitor in the Play tab, which shows every network request in real-time.
+                    </p>
+                </section>
+
+                <section class="info-section">
+                <h2>📡 How It Connects</h2>
+                <p>
+                    vid2vibes communicates with your Lovense device through the <strong>Lovense Connect</strong> app running on your phone 
+                    or PC. The connection happens over your local network using HTTP requests to the Connect app's local server 
+                    (typically something like <code>http://192.168.1.xxx:20010</code>).
+                </p>
+                <p>
+                    <strong>No internet required for playback!</strong> Once the page is loaded, you can disconnect from the internet 
+                    entirely. As long as your browser, your device, and the Lovense Connect app are all on the same LAN, everything works offline.
+                </p>
+                <p>
+                    <strong>Tip:</strong> If you use a VPN with a kill switch, you can often whitelist local LAN traffic to bypass the VPN 
+                    while still blocking all external connections—giving you full privacy with working device control.
+                </p>
+            </section>
+
+            <section class="info-section">
+                <h2>💾 Offline / Local Use</h2>
+                <p>
+                    You can save this entire app locally using browser extensions or tools designed to download websites 
+                    (such as SingleFile, HTTrack, or similar). Once saved:
+                </p>
+                <ul>
+                    <li>Open the saved <code>index.html</code> directly in your browser</li>
+                    <li>Works completely offline (LAN connection to device still needed)</li>
+                    <li>Your videos stay on your disk—nothing is ever uploaded</li>
+                </ul>
+                <p>
+                    <strong>Note:</strong> A local copy won't receive future updates, bug fixes, or new features. 
+                    Consider bookmarking the live version if you want to stay current.
+                </p>
+            </section>
+
+                <section class="info-section">
+                    <h2>⚙️ How It Works</h2>
+                    <p>
+                        <strong>1. Audio Analysis:</strong> When you drop a video, the browser extracts the audio track and analyzes it 
+                        using the Web Audio API. Beat detection identifies rhythm patterns and volume changes throughout the track.
+                    </p>
+                    <p>
+                        <strong>2. Pattern Generation:</strong> The analysis is converted into Lovense-compatible intensity patterns. 
+                        Intensity follows the music's energy—louder sections create stronger vibrations, beats create pulses.
+                    </p>
+                    <p>
+                        <strong>3. Synchronized Playback:</strong> During playback, patterns are sent to your device in real-time, 
+                        synchronized with the video timeline. Seeking and pausing are fully supported.
+                    </p>
+                </section>
+
+                <section class="info-section">
+                    <h2>📋 Requirements</h2>
+                    <ul>
+                        <li>Modern browser (Chrome, Firefox, Edge, Safari)</li>
+                        <li>Lovense device paired with Lovense Connect app</li>
+                        <li>Device and browser on the same local network</li>
+                        <li>Lovense Connect's "Game Mode" or "Local API" enabled</li>
+                    </ul>
+                </section>
+
+                <section class="info-section">
+                    <h2>❗ Known Issues/Bugs</h2>
+                    <ul>
+                        <li>Audio->Funscript occasionally is very low intensity/missing the sounds</li>
+                        <li>Adding videos from the 'Play' videos can cause errors with queue order</li>
+                    </ul>
+                </section>
+                <!-- END INFO CONTENT -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="./scripts/utils.js"></script>
+    <script src="./scripts/audioAnalyzer.js"></script>
+    <script src="./scripts/patternGenerator.js"></script>
+    <script src="./scripts/lovenseApi.js"></script>
+    <script src="./scripts/visualizer.js"></script>
+    <script src="./scripts/fileHandler.js"></script>
+    <script src="./scripts/player.js"></script>
+    <script src="./scripts/ui.js"></script>
+    <script src="./scripts/app.js"></script>
+
+    <!-- Support Button -->
+    <a href="https://ko-fi.com/aericode" target="_blank" rel="noopener" class="support-btn" title="Support on Ko-fi">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        Support me!
+    </a>
+</body>
+</html>
